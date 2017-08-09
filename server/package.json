@@ -1,0 +1,29 @@
+{
+  "name": "ctf-platform-server",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.15.4",
+    "express-handlebars": "^3.0.0",
+    "passport": "^0.3.2",
+    "react": "^15.6.1",
+    "react-dom": "^15.6.1"
+  },
+  "scripts": {
+    "forever": "echo \"Will be replaced with forever soon\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "babelify": "echo \"Will use babel to compile files in ../web/scripts\""
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-react": "^6.24.1"
+  },
+  "babel": {
+    "presets": [
+      "env",
+      "react"
+    ]
+  }
+}
