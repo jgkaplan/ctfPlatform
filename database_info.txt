@@ -1,0 +1,5 @@
+Using a MongoDB database named _____
+
+Collections:
+users
+teams

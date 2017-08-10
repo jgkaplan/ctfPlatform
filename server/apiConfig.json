@@ -1,3 +1,4 @@
 {
     "webPort": 3000,
+    "sessionSecret": "fklajsdlbkjLAEO31B"
 }
