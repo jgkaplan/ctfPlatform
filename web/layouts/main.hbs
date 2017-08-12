@@ -6,15 +6,15 @@
     <link rel='stylesheet' href='/styles/style.css' />
 </head>
 <body>
-    <nav>
+    <nav id="navbar">
         <ul>
             <li><a href="/">Home</a></li>
             <li><a href="/about">About</a></li>
             <li><a href="/rules">Rules</a></li>
+            <li><a href="/scoreboard">Scoreboard</a></li>
             {{#if user}}
                 <li><a href="/team">Team</a></li>
                 <li><a href="/problems">Problems</a></li>
-                <li><a href="/scoreboard">Scoreboard</a></li>
                 <li><a href="/logout">Log Out</a></li>
             {{else}}
                 <li><a href="/register">Register</a></li>
@@ -22,6 +22,14 @@
             {{/if}}
         </ul>
     </nav>
+    {{#if error}}
+        <div id="flashMessages">
+            <span id="flashMessage">{{error}}</span>
+        </div>
+        <script>
+            setTimeout(() => {document.getElementById("flashMessages").remove()}, 3000);
+        </script>
+    {{/if}}
     {{{body}}}
     <footer></footer>
 </body>

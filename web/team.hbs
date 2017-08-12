@@ -1,1 +1,15 @@
 TEEEEAAAAAM
+{{#if teamname}}
+    <span id="teamnameText">{{teamname}}</span>
+    <span id="teampasswordText">{{teampassword}}</span>
+{{else}}
+    <span>Create or Join a Team!</span>
+    <form method="post" action="/api/jointeam">
+        <label for="teamname">Team Name:</label>
+        <input type="text" name="teamname" id="teamname" placeholder="Team Name" />
+        <label for="teampassword">Team Password:</label>
+        <input type="password" name="teampassword" id="teampassword" placeholder="password" />
+        <input type="submit" name="joinTeam" value="Join Team" />
+        <input type="submit" name="createTeam" value="Create Team" />
+    </form>
+{{/if}}

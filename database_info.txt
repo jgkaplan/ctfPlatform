@@ -1,5 +1,21 @@
-Using a MongoDB database named _____
+Using a MongoDB database named ctfPlatform
 
 Collections:
 users
+{
+    username, firstname, lastname, school, teamid, password, id
+}
 teams
+{
+    teamname, numberOfMembers, id
+}
+submissions
+{
+    problemid, teamid, time, correctness, id
+}
+problems
+{
+    name, description, points, id
+}
+sessions
+
