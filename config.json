@@ -7,5 +7,7 @@
     "dbLocation": "mongodb://localhost/ctfPlatform",
     "competitionStart": -1,
     "competitionEnd": -1,
-    "maxTeamSize": 4
+    "maxTeamSize": 4,
+    "problemDir": "/path/to/dir/problems",
+    "adminAccountNames": ["Admin"]
 }

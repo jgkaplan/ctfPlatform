@@ -1,0 +1,17 @@
+<div id="problemList">
+    {{#each problems}}
+        <div>
+            <span>Name: {{name}}</span>
+            <span>Description: {{{description}}}</span>
+            <span>Hint: {{{hint}}}</span>
+            <span>Score: {{score}}</span>
+            <span>Category: {{category}}</span>
+            <form action="/api/submit" method="post">
+                <input type="hidden" name="_csrf" value="{{../csrf}}" />
+                <input type="hidden" name="problemid" value="{{_id}}" />
+                <input type="text" autocomplete="off" name="flag" />
+                <input type="submit" value="Submit" />
+            </form>
+        </div>
+    {{/each}}
+</div>

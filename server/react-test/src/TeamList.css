@@ -1,0 +1,37 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+.teamTable{
+    width: 800px;
+    margin: 10px 20px;
+}
+div{
+    overflow-x: auto;
+}
+
+table{
+    border-collapse: collapse;
+}
+tr{
+    height: 30px;
+    border-bottom: 1px solid #ddd;
+}
+th{
+    text-align: left;
+    border-bottom: 2px solid gray;
+    border-collapse: collapse;
+    background-color: white;
+    color: black;
+}
+
+tr:nth-child(even){
+    background-color: #eee;
+}
+
+tbody tr:hover{
+    background-color: #ddd;
+    cursor: pointer;
+}

@@ -1,0 +1,10 @@
+{
+    "name": "Example Problem",
+    "category": "Tutorial",
+    "score": 10,
+    "description": "This is an example problem. Look at the hint to find the flag. You can link to anything in the static folder like this: <a href='/problem-static/example-problem/file.txt'>Click Here</a>",
+    "hint": "The flag for this level is ctfPlatform{my_first_flag}",
+    "threshold": 0,
+    "weightmap": {},
+    "grader": "grader.js"
+}

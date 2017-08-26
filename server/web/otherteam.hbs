@@ -1,0 +1,9 @@
+Team: {{team.teamname}}
+Members: {{members}}
+<ul>
+    {{#each members as |member|}}
+    <li>
+        {{member.username}}
+    </li>
+    {{/each}}
+</ul>

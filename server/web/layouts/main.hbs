@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>CTF Platform</title>
+    <link rel='stylesheet' href='/styles/normalize.css' />
     <link rel='stylesheet' href='/styles/style.css' />
 </head>
 <body>
@@ -22,15 +23,20 @@
             {{/if}}
         </ul>
     </nav>
-    {{#if error}}
-        <div id="flashMessages">
-            <span id="flashMessage">{{error}}</span>
-        </div>
+    <div id="flashMessages">
+        {{#each messages.message as |message|}}
+            {{#each message}}
+                <div class="flashMessage {{@key}}">{{this}}</div>
+            {{/each}}
+        {{/each}}
         <script>
             setTimeout(() => {document.getElementById("flashMessages").remove()}, 3000);
         </script>
-    {{/if}}
+    </div>
     {{{body}}}
     <footer></footer>
+    {{#each scripts}}
+        <script src="{{this}}"></script>
+    {{/each}}
 </body>
 </html>

@@ -3,19 +3,19 @@ Using a MongoDB database named ctfPlatform
 Collections:
 users
 {
-    username, firstname, lastname, school, teamid, password, id
+    username, firstname, lastname, school, country teamid, password, id
 }
 teams
 {
-    teamname, numberOfMembers, id
+    teamname, numberOfMembers, id, score
 }
 submissions
 {
-    problemid, teamid, time, correctness, id
+    problem, team, time, correct, attempt, id
 }
 problems
 {
     name, description, points, id
 }
 sessions
-
+errors

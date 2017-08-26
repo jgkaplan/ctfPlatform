@@ -1,0 +1,27 @@
+#flashMessages{
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+}
+.flashMessage {
+    display: inline-block;
+    height: 30px;
+    min-width: 50px;
+    text-align: center;
+    margin: 2px;
+}
+.error {
+    background-color: #ff7a7a;
+    border-radius: 5px;
+    border: 3px solid #ff4444;
+}
+.failure {
+    background-color: #ff7a7a;
+    border-radius: 5px;
+    border: 3px solid #ff4444;
+}
+.success {
+    background-color: #82ff79;
+    border-radius: 5px;
+    border: 3px solid #44ff5c;
+}

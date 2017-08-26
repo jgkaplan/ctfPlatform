@@ -1,5 +1,6 @@
 Login
 <form method="post" action="/api/login">
+    <input type="hidden" name="_csrf" value="{{csrf}}" />
     <label for="username">Username:</label>
     <input type="text" id="username" name="username" placeholder="username" />
     <label for="password">Password:</label>

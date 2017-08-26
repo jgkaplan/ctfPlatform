@@ -1,0 +1,10 @@
+{
+    "name": "Example Problem 2",
+    "category": "Tutorial",
+    "score": 10,
+    "description": "This problem only unlocks after completing the first Example Problem.",
+    "hint": "The flag for this level is ctfPlatform{my_second_flag}",
+    "threshold": 1,
+    "weightmap": {"Example Problem": 1},
+    "grader": "grader.js"
+}

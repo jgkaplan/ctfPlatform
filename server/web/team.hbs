@@ -2,9 +2,15 @@ TEEEEAAAAAM
 {{#if teamname}}
     <span id="teamnameText">{{teamname}}</span>
     <span id="teampasswordText">{{teampassword}}</span>
+    <span id="teamscore">{{score}}</span>
+    <form action="/api/leaveteam" method="post">
+        <input type="hidden" name="_csrf" value="{{csrf}}" />
+        <input type="submit" value="Leave Team" />
+    </form>
 {{else}}
     <span>Create or Join a Team!</span>
     <form method="post" action="/api/jointeam">
+        <input type="hidden" name="_csrf" value="{{csrf}}" />
         <label for="teamname">Team Name:</label>
         <input type="text" name="teamname" id="teamname" placeholder="Team Name" />
         <label for="teampassword">Team Password:</label>
