@@ -12,6 +12,9 @@ var flash = require('express-flash');
 var MongoStore = require('connect-mongo')(session);
 var bcrypt = require('bcryptjs');
 var csurf = require('csurf');
+var morgan = require('morgan');
+var rfs = require('rotating-file-stream');
+var ObjectID = require('mongodb').ObjectID;
 
 //Config file
 var config = require('../config.json');
@@ -24,6 +27,18 @@ app.use(express.static(path.resolve(__dirname, 'web', 'static')));
 app.use('/problem-static', express.static(path.resolve(__dirname, '..', 'problem-static')));
 // app.use(express.favicon(path.resolve(__dirname, '..', 'web', 'images', 'favicon.ico')));
 
+var logDirectory = path.join(__dirname, 'log')
+// ensure log directory exists
+fs.existsSync(logDirectory) || fs.mkdirSync(logDirectory);
+// create a rotating write stream
+var accessLogStream = rfs('access.log', {
+  interval: '1d', // rotate daily
+  path: logDirectory
+});
+// create a write stream (in append mode)
+// var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'});
+// setup the logger
+app.use(morgan('combined', {stream: accessLogStream}));
 //================DATABASE======================
 var db = require('monk')(config.dbLocation);
 var Users = db.get('users');
@@ -62,6 +77,9 @@ app.use(function(req, res, next){
     // res.locals.success = req.flash('success');
     // res.locals.failure = req.flash('failure');
     res.locals.messages = req.flash('message');
+    if(req.user){
+        res.locals.isAdmin = config.adminAccountNames.indexOf(req.user.username) != -1;
+    }
     next();
 });
 
@@ -133,6 +151,15 @@ function loggedIn(req, res, next) {
     }
 }
 
+function requireTeam(req, res, next){
+    if(req.user && req.user.teamid){
+        next();
+    }else{
+        req.flash('message', {'error': "Team needed to Access that Resource"});
+        res.redirect('/team');
+    }
+}
+
 function requireAdmin(req, res, next){
     if(req.user && config.adminAccountNames.indexOf(req.user.username) != -1){
         next();
@@ -171,17 +198,29 @@ app.get('/team', csrfProtection, loggedIn, (req, res) => {
 });
 app.get('/team/:id', loggedIn, (req, res) => {
     let teamid = req.params.id;
+    //Get data about the team from Teams, Users, and Submissions collecitons
     Promise.all([
         Teams.findOne({_id: teamid}, '-teampassword'),
-        Users.find({'teamid': teamid}, '-password'),
-        Submissions.find({'teamid': teamid, 'correct': true})
-    ]).spread((team, users, subs) => {
-        res.render('otherteam', {team: team, members: users, solves: subs});
+        Users.find({'teamid': ObjectID(teamid)}, '-password'),
+        Submissions.find({'team': ObjectID(teamid), 'correct': true}, 'problem time')
+    ]).then(([team,users,subs]) => {
+        //Find out the problem names from the Problems collection
+        Problems.find({'_id': {$in: subs.map((s) => {return ObjectID(s.problem);})}}, '_id name').then((problemNames) => {
+            subs = subs.map((s) => {
+                return {
+                    time: s.time,
+                    name: problemNames.find((p) => {return p._id == s.problem}).name
+                };
+            });
+            res.render('otherteam', {team: team, members: users, solves: subs});
+        }).catch((err) => {
+            res.end('Error');
+        });
     }).catch((err) => {
         res.end('Error');
     });
 });
-app.get('/problems', loggedIn, csrfProtection, (req, res) => {
+app.get('/problems', loggedIn, requireTeam, csrfProtection, (req, res) => {
     Problems.find({}, 'name score category description hint _id').then((docs) => {
         res.render('problems', {problems: docs, csrf: req.csrfToken()});
     }).catch((err) => {
@@ -208,7 +247,6 @@ app.get('/logout', (req, res) => {
 app.get('/test', (req, res) => {
     req.flash('message', {"error": "hi"});
     req.flash('message', {"success": "bye"});
-    // console.log(req.flash("message"));
     res.render('404');
 });
 //Error page
@@ -227,7 +265,7 @@ app.post('/api/register', csrfProtection, passport.authenticate('local-signup', 
     successRedirect: '/team',
     failureFlash: true
 }));
-app.post('/api/submit', csrfProtection, loggedIn, (req, res) => {
+app.post('/api/submit', csrfProtection, loggedIn, requireTeam, (req, res) => {
     Submissions.findOne({team: req.user.teamid, problem: req.body.problemid, correct: true}).then((doc) => {
         if(doc){
             req.flash('message', {"failure": "You already solved this problem."});
@@ -236,7 +274,7 @@ app.post('/api/submit', csrfProtection, loggedIn, (req, res) => {
             Problems.findOne({_id: req.body.problemid}).then((problem) => {
                 let grade = require(problem.grader);
                 let [correct, message] = grade(null, req.body.flag);
-                Submissions.insert({team: req.user.teamid, problem: req.body.problemid, correct: correct, attempt: req.body.flag, time: Date.now()});
+                Submissions.insert({team: req.user.teamid, user: req.user._id, problem: req.body.problemid, correct: correct, attempt: req.body.flag, time: Date.now()});
                 Teams.update({_id: req.user.teamid}, {$inc: {score: problem.score}});
                 if(correct){
                     req.flash('message', {'success' : message});
@@ -318,11 +356,16 @@ app.post('/api/leaveteam', csrfProtection, loggedIn, (req, res) => {
 
 
 //================LISTEN======================
-// const options = {
-//     key: fs.readFileSync(config.httpsKeyFile),
-//     cert: fs.readFileSync(config.httpsCertFile)
-// }
-http.createServer(app).listen(config.webPort, () => {
-    console.log("Running on port: " + config.webPort);
-});
-// https.createServer(options,app).listen(config.webPortSecure);
+
+if(config.useHTTP){
+    http.createServer(app).listen(config.webPort, () => {
+        console.log("Running on port: " + config.webPort);
+    });
+}
+if(config.useHTTPS){
+    const options = {
+        key: fs.readFileSync(config.httpsKeyFile),
+        cert: fs.readFileSync(config.httpsCertFile)
+    }
+    https.createServer(options,app).listen(config.webPortSecure);
+}

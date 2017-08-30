@@ -1,9 +1,18 @@
 Team: {{team.teamname}}
-Members: {{members}}
+Members:
 <ul>
     {{#each members as |member|}}
     <li>
         {{member.username}}
+    </li>
+    {{/each}}
+</ul>
+Solves:
+<ul>
+    {{#each solves as |solve|}}
+    <li>
+        {{solve.name}}
+        {{solve.time}}
     </li>
     {{/each}}
 </ul>

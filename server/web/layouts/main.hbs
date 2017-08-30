@@ -16,6 +16,9 @@
             {{#if user}}
                 <li><a href="/team">Team</a></li>
                 <li><a href="/problems">Problems</a></li>
+                {{#if isAdmin}}
+                    <li><a href="/admin">Admin</a></li>
+                {{/if}}
                 <li><a href="/logout">Log Out</a></li>
             {{else}}
                 <li><a href="/register">Register</a></li>
@@ -29,9 +32,9 @@
                 <div class="flashMessage {{@key}}">{{this}}</div>
             {{/each}}
         {{/each}}
-        <script>
+        {{!-- <script>
             setTimeout(() => {document.getElementById("flashMessages").remove()}, 3000);
-        </script>
+        </script> --}}
     </div>
     {{{body}}}
     <footer></footer>

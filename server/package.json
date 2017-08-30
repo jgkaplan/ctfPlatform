@@ -12,10 +12,12 @@
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.5",
     "monk": "^6.0.3",
+    "morgan": "^1.8.2",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "react": "^15.6.1",
-    "react-dom": "^15.6.1"
+    "react-dom": "^15.6.1",
+    "rotating-file-stream": "^1.2.2"
   },
   "scripts": {
     "forever": "echo \"Will be replaced with forever soon\"",

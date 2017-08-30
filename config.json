@@ -2,12 +2,14 @@
     "webPort": 3000,
     "webPortSecure": 3001,
     "sessionSecret": "fklajsdlbkjLAEO31B",
+    "useHTTP": true,
+    "useHTTPS": false,
     "httpsKeyFile": "path/to/key/file",
     "httpsCertFile": "path/to/cert/file",
     "dbLocation": "mongodb://localhost/ctfPlatform",
     "competitionStart": -1,
     "competitionEnd": -1,
     "maxTeamSize": 4,
-    "problemDir": "/path/to/dir/problems",
-    "adminAccountNames": ["Admin"]
+    "problemDir": "path/to/ctfPlatform/problems",
+    "adminAccountNames": ["Admin", "admin"]
 }

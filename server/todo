@@ -1,3 +1,11 @@
 Move Team signup to registration page, after the first page has been submitted.
 Setup error logging
 Add user id to submissions, then display the user that solved a particular problem on the team page
+Fix flash messages
+
+Normalize the database (so that team is always teamid)
+
+Implement competition start and end time
+
+only show eligible teams on scoreboard (all teams on admin scoreboard)
+    -teams with no admin or banned members
