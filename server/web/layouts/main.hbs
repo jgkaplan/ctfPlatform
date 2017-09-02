@@ -12,12 +12,18 @@
             <li><a href="/">Home</a></li>
             <li><a href="/about">About</a></li>
             <li><a href="/rules">Rules</a></li>
-            <li><a href="/scoreboard">Scoreboard</a></li>
+            {{#if isAdmin}}
+                <li><a href="/admin/scoreboard">Scoreboard</a></li>
+            {{else}}
+                <li><a href="/scoreboard">Scoreboard</a></li>
+            {{/if}}
             {{#if user}}
                 <li><a href="/team">Team</a></li>
-                <li><a href="/problems">Problems</a></li>
                 {{#if isAdmin}}
+                    <li><a href="/admin/problems">Problems</a></li>
                     <li><a href="/admin">Admin</a></li>
+                {{else}}
+                    <li><a href="/problems">Problems</a></li>
                 {{/if}}
                 <li><a href="/logout">Log Out</a></li>
             {{else}}
@@ -27,7 +33,12 @@
         </ul>
     </nav>
     <div id="flashMessages">
-        {{#each messages.message as |message|}}
+        {{!-- {{#each messages.message as |message|}}
+            {{#each message}}
+                <div class="flashMessage {{@key}}">{{this}}</div>
+            {{/each}}
+        {{/each}} --}}
+        {{#each messages as |message|}}
             {{#each message}}
                 <div class="flashMessage {{@key}}">{{this}}</div>
             {{/each}}

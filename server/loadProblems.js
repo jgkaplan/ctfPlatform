@@ -1,4 +1,4 @@
-var config = require('../config.json');
+var config = require('../config.js');
 var monk = require('monk')(config.dbLocation);
 var fs = require('fs');
 var path = require('path');
