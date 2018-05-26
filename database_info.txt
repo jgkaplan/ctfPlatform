@@ -3,11 +3,11 @@ Using a MongoDB database named ctfPlatform
 Collections:
 users
 {
-    username, firstname, lastname, school, country team_id, password, id
+    username, firstname, lastname, school, country, team_id, password, id
 }
 teams
 {
-    teamname, numberOfMembers, id, score
+    teamname, numberOfMembers, id, score, submissionTime
 }
 submissions
 {
