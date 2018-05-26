@@ -32,6 +32,11 @@
             {{/if}}
         </ul>
     </nav>
+    {{#if notification}}
+        <div id="notification">
+            {{notification}}
+        </div>
+    {{/if}}
     <div id="flashMessages">
         {{!-- {{#each messages.message as |message|}}
             {{#each message}}

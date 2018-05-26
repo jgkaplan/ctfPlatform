@@ -1,6 +1,6 @@
-var express = require('express');
-var router = express.Router();
-var Problems, Teams;
+const express = require('express');
+const router = express.Router();
+let Problems, Teams;
 
 router.get('/', (req, res) => {
     res.render('admin', {messages: req.flash('message')});

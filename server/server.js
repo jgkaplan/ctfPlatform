@@ -1,38 +1,41 @@
-var express = require('express');
-var path = require('path');
-var fs = require('fs');
-var bodyParser = require('body-parser');
-var exphbs = require('express-handlebars');
-var session = require('express-session');
-var passport = require('passport');
-var LocalStrategy = require('passport-local').Strategy;
-var https = require('https');
-var http = require('http');
-var flash = require('express-flash');
-var MongoStore = require('connect-mongo')(session);
-var bcrypt = require('bcryptjs');
-var csurf = require('csurf');
-var morgan = require('morgan');
-var rfs = require('rotating-file-stream');
-var ObjectID = require('mongodb').ObjectID;
-var moment = require('moment');
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const bodyParser = require('body-parser');
+const exphbs = require('express-handlebars');
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const https = require('https');
+const http = require('http');
+const flash = require('express-flash');
+const MongoStore = require('connect-mongo')(session);
+const bcrypt = require('bcryptjs');
+const csurf = require('csurf');
+const morgan = require('morgan');
+const rfs = require('rotating-file-stream');
+const ObjectID = require('mongodb').ObjectID;
+const moment = require('moment');
+// const http2 = require('http2');
+// const spdy = require('spdy');
 
 //Config file
-var config = require('../config.js');
+const config = require('../config.js');
 
-var csrfProtection = csurf();
+const csrfProtection = csurf();
 
-var app = express();
+let app = express();
+
 //Setting up the static files
 app.use(express.static(path.resolve(__dirname, 'web', 'static')));
 app.use('/problem-static', express.static(path.resolve(__dirname, '..', 'problem-static')));
 // app.use(express.favicon(path.resolve(__dirname, '..', 'web', 'images', 'favicon.ico')));
 
-var logDirectory = path.join(__dirname, 'log')
+const logDirectory = path.join(__dirname, 'log')
 // ensure log directory exists
 fs.existsSync(logDirectory) || fs.mkdirSync(logDirectory);
 // create a rotating write stream
-var accessLogStream = rfs('access.log', {
+const accessLogStream = rfs('access.log', {
   interval: '1d', // rotate daily
   path: logDirectory
 });
@@ -42,11 +45,11 @@ var accessLogStream = rfs('access.log', {
 app.use(morgan('combined', {stream: accessLogStream}));
 
 //================DATABASE======================
-var db = require('monk')(config.dbLocation);
-var Users = db.get('users');
-var Teams = db.get('teams');
-var Problems = db.get('problems');
-var Submissions = db.get('submissions');
+const db = require('monk')(config.dbLocation);
+const Users = db.get('users');
+const Teams = db.get('teams');
+const Problems = db.get('problems');
+const Submissions = db.get('submissions');
 
 //================EXPRESS======================
 app.use(bodyParser.urlencoded({extended: true}));
@@ -70,7 +73,7 @@ app.engine('.hbs', exphbs({
     partialsDir: path.resolve(__dirname,'web','partials')
 }));
 app.set('view engine', '.hbs');
-app.set('views', path.resolve(__dirname, 'web'));
+app.set('views', path.resolve(__dirname, 'web', 'views'));
 //================PASSPORT=====================
 passport.use(new LocalStrategy({
     passReqToCallback: true
@@ -206,7 +209,7 @@ function requireCompetitionStarted(req, res, next){
 }
 
 //================ROUTERS======================
-var adminRoutes = require('./routes/admin.js')(Problems, Teams);
+const adminRoutes = require('./routes/admin.js')(Problems, Teams);
 // var errorPage = require('./routes/404.js');
 app.use('/admin', requireAdmin, csrfProtection, adminRoutes);
 
@@ -220,6 +223,7 @@ app.get('/about', (req, res) => {
 app.get('/rules', (req, res) => {
     res.render('rules', {messages: req.flash('message')});
 });
+
 app.get('/team', csrfProtection, loggedIn, (req, res) => {
     if(req.user.team_id){
         Teams.findOne({_id: req.user.team_id}, '-teampassword').then((doc) => {
@@ -267,8 +271,8 @@ app.get('/problems', loggedIn, requireTeam, csrfProtection, requireCompetitionSt
     });
 });
 app.get('/scoreboard', requireCompetitionStarted, (req, res) => {
-    Teams.find({}, {sort: {score: -1}, teampassword: 0}).then((docs) => {
-        res.render('scoreboard', {teams: JSON.stringify(docs), messages: req.flash('message'), scripts: ['/scripts/teamlist.bundle.js']});
+    Teams.find({}, {sort: {score: -1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
+        res.render('scoreboard', {teams: JSON.stringify(docs), messages: req.flash('message'), scripts: ['/scripts/jquery.min.js','/scripts/teamlist.bundle.js']});
     }).catch((err) => {
         res.end("Error");
     });
@@ -283,9 +287,8 @@ app.get('/logout', (req, res) => {
     req.logout();
     res.redirect('/');
 });
-//Error page
-app.get('*', (req, res, next) => {
-    res.render('404');
+app.get(`/${config.easterEggUrl}`, (req, res) => {
+    res.render("eastereggs", {csrf: req.csrfToken(), messages: req.flash('message')});
 });
 
 //Start of API
@@ -318,7 +321,7 @@ app.post('/api/submit', csrfProtection, requireCompetitionActive, loggedIn, requ
                 });
                 if(correct){
                     req.flash('message', {'success' : message});
-                    Teams.update({_id: req.user.team_id}, {$inc: {score: problem.score}});
+                    Teams.update({_id: req.user.team_id}, {$inc: {score: problem.score}, $set: {submissionTime: Date.now()}});
                 }else{
                     req.flash('message', {'failure' : message});
                 }
@@ -330,7 +333,17 @@ app.post('/api/submit', csrfProtection, requireCompetitionActive, loggedIn, requ
         }
     });
 });
+app.pos('/api/eggs', (req, res) => {
 
+});
+app.get('/api/teams', (req, res) => {
+    Teams.find({}, {sort: {score:-1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({
+            teams: docs
+        }));
+    });
+});
 app.post('/api/jointeam', csrfProtection, loggedIn, (req, res) => {
     if(!req.body.teamname || !req.body.teampassword){
         req.flash('message', {"error": "Invalid teamname/password."});
@@ -368,6 +381,7 @@ app.post('/api/jointeam', csrfProtection, loggedIn, (req, res) => {
                     var newTeam = {
                         teamname: req.body.teamname,
                         teampassword: req.body.teampassword,
+                        school: req.body.school,
                         numberOfMembers: 1,
                         score: 0
                     }
@@ -395,14 +409,31 @@ app.post('/api/leaveteam', csrfProtection, loggedIn, (req, res) => {
     res.redirect('/team');
 });
 
+//Error page
+app.get('*', (req, res, next) => {
+    res.render('404');
+});
 
 //================LISTEN======================
 
-if(config.useHTTP){
-    http.createServer(app).listen(config.webPort, () => {
-        console.log("Running on port: " + config.webPort);
-    });
-}
+// const server = config.useHTTPS ? http2.createSecureServer({
+//         key: fs.readFileSync(config.httpsKeyFile),
+//         cert: fs.readFileSync(config.httpsCertFile)
+//     },app)
+//     : http2.createServer(app);
+
+// if(config.useHTTPS){
+//     server.listen(config.webPortSecure);
+// }else{
+//     server.listen(config.webPort);
+// }
+
+
+// if(config.useHTTP){
+//     http.createServer(app).listen(config.webPort, () => {
+//         console.log("Running on port: " + config.webPort);
+//     });
+// }
 if(config.useHTTPS){
     const options = {
         key: fs.readFileSync(config.httpsKeyFile),

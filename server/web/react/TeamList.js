@@ -8,7 +8,6 @@ class Team extends Component {
             <tr onClick={this.props.onClick}>
                 <td>{this.props.rank}</td>
                 <td>{this.props.name}</td>
-                <td>{this.props.school}</td>
                 <td>{this.props.points}</td>
             </tr>
 
@@ -21,13 +20,24 @@ class TeamList extends Component {
         super(props);
         this.state = {teams: window.initialState} || {
             teams: [
-                {name: "a", school: "The Best School", score: 10, rank: 1, _id: "13841"},
-                {name: "Yes", school: "Another", score: 8, rank: 2, _id: "8510311"}
+                {name: "a", school: "The Best School", score: 10, _id: "13841"},
+                {name: "Yes", school: "Another", score: 8, _id: "8510311"}
             ]
         };
     }
     handleClick(teamid){
         window.location.href = "/team/"+teamid;
+    }
+    getTeams() {
+        $.get('/api/teams').done((data) => {
+            this.setState(data);
+        });
+    }
+    componentDidMount() {
+        this.refreshTeamsInterval = setInterval(() => this.getTeams(), 5000);
+    }
+    componentWillUnmount() {
+        clearInterval(this.refreshTeamsInterval)
     }
     render() {
         return (
@@ -37,13 +47,12 @@ class TeamList extends Component {
                         <tr>
                             <th>Rank</th>
                             <th>Team Name</th>
-                            <th>School</th>
                             <th>Points</th>
                         </tr>
                     </thead>
                     <tbody>
                         {this.state.teams.map((team, index) =>
-                            <Team key={team._id} rank={index + 1} name={team.teamname} school={team.school} points={team.score} onClick={() => this.handleClick(team._id)}/>
+                            <Team key={team._id} rank={index + 1} name={team.teamname} points={team.score} onClick={() => this.handleClick(team._id)}/>
                         )}
                     </tbody>
                 </table>

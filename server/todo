@@ -14,3 +14,10 @@ Add the other pages (chat, learn, faq, news, teachers)
 make loadProblem script preserve problem id if the name is the same (allows for adding problems during competition)
 
 decide if links on admin page should be for /admin/* or /* (in which case /admin links should be displayed elsewhere on the page)
+
+
+Move render object (messages, notifications) to middlewear, and tack on other stuff before rendering (so we don't have to type the same thing for every res.render function)
+
+In grader files, pass in the key to the function
+
+easter eggs
