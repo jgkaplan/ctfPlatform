@@ -12,6 +12,7 @@ module.exports = {
     "maxTeamSize": 4,
     "problemDir": path.join(__dirname, 'problems'),
     "backupDir": path.join(__dirname, 'backups'),
+    "easterEggFile": path.join(__dirname, 'easterEggs.json'),
     "adminAccountNames": ["Admin", "admin"],
     "restrictedNames": ["admin","chc_"],
     "easterEggUrl": "eastereggs"

@@ -3,6 +3,10 @@ TEEEEAAAAAM
     <span id="teamnameText">{{teamname}}</span>
     <span id="teampasswordText">{{teampassword}}</span>
     <span id="teamscore">{{score}}</span>
+    <span id="teameligible">Your team is {{#if eligible}}Eligible{{else}}Ineligible{{/if}}</span>
+    {{#if displayEggs}}
+        <span id="easterEggsFound">Easter Eggs found: {{eggCount}}</span>
+    {{/if}}
     <form action="/api/leaveteam" method="post">
         <input type="hidden" name="_csrf" value="{{csrf}}" />
         <input type="submit" value="Leave Team" />

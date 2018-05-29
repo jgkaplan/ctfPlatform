@@ -1,23 +1,32 @@
 Move Team signup to registration page, after the first page has been submitted.
-Setup error logging
 
-only show eligible teams on scoreboard (all teams on admin scoreboard)
-    -teams with no admin or banned members
-
-Style everything
-
-admin function that backs up the database
-
-
-Add the other pages (chat, learn, faq, news, teachers)
+Add the other pages (news, teachers)
 
 make loadProblem script preserve problem id if the name is the same (allows for adding problems during competition)
 
-decide if links on admin page should be for /admin/* or /* (in which case /admin links should be displayed elsewhere on the page)
-
-
-Move render object (messages, notifications) to middlewear, and tack on other stuff before rendering (so we don't have to type the same thing for every res.render function)
-
 In grader files, pass in the key to the function
 
-easter eggs
+
+Easter eggs
+    - On easter egg page, consider displaying easter egg scoreboard (or at least, on admin page)
+
+Admin page
+    - make admin scoreboard show ineligible teams differently
+    - mark team as ineligible
+    - mark user as admin
+    - create / modify problems
+    - create / modify easter eggs
+    - view full scoreboard (including ineligible teams)
+    - call loadProblems, loadEasterEggs
+    - display admin links
+    - backup database
+
+errors
+    - fix error on invalid /team/:id id
+    - setup error logging
+
+content
+    - fill in content on all pages (home, about, faq, chat, learn, news, etc.)
+
+style
+    - style everything

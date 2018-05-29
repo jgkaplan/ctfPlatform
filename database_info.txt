@@ -7,7 +7,7 @@ users
 }
 teams
 {
-    teamname, numberOfMembers, id, score, submissionTime
+    teamname, numberOfMembers, id, score, submissionTime, eligible
 }
 submissions
 {
@@ -16,6 +16,10 @@ submissions
 problems
 {
     name, description, points, id
+}
+eggs
+{
+    egg, msg
 }
 sessions
 errors

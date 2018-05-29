@@ -3,5 +3,6 @@ Easter Egg Submission Page
 <form action="/api/eggs" method="post">
     <label for="egg">Easter Egg:</label>
     <input name="egg" id="egg"/>
+    <input type="hidden" name="_csrf" value="{{csrf}}" />
     <input type="submit" />
 </form>

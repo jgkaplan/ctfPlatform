@@ -1,0 +1,7 @@
+{
+    "eggs": [
+        {"egg": "egg{egg}"},
+        {"egg": "egg{the_best_easter_egg}", "msg": "You found an easter egg!"},
+        {"egg": "egg{you_found_an_easter_egg}", "msg": "You found another easter egg!"}
+    ]
+}

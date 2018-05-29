@@ -50,6 +50,8 @@ const Users = db.get('users');
 const Teams = db.get('teams');
 const Problems = db.get('problems');
 const Submissions = db.get('submissions');
+const EasterEggs = db.get('eggs');
+const EasterEggSubmissions = db.get('eggsubmissions');
 
 //================EXPRESS======================
 app.use(bodyParser.urlencoded({extended: true}));
@@ -207,7 +209,6 @@ function requireCompetitionStarted(req, res, next){
         }
     }
 }
-
 //================ROUTERS======================
 const adminRoutes = require('./routes/admin.js')(Problems, Teams);
 // var errorPage = require('./routes/404.js');
@@ -223,18 +224,34 @@ app.get('/about', (req, res) => {
 app.get('/rules', (req, res) => {
     res.render('rules', {messages: req.flash('message')});
 });
-
+app.get('/chat', (req, res) => {
+    res.render('chat', {messages: req.flash('message')});
+});
+app.get('/learn', (req, res) => {
+    res.render('learn', {messages: req.flash('message')});
+});
+app.get('/faq', (req, res) => {
+    res.render('faw', {messages: req.flash('message')});
+});
 app.get('/team', csrfProtection, loggedIn, (req, res) => {
     if(req.user.team_id){
-        Teams.findOne({_id: req.user.team_id}, '-teampassword').then((doc) => {
-            doc.csrf = req.csrfToken();
-            doc.messages = req.flash('message');
-            res.render('team', doc);
+        Promise.all([
+            Teams.findOne({_id: req.user.team_id}, '-teampassword'),
+            EasterEggSubmissions.count({team_id: ObjectID(req.user.team_id), correct: true})
+        ]).then(([team, numEggs]) => {
+            team.csrf = req.csrfToken();
+            team.messages = req.flash('message');
+            team.displayEggs = numEggs > 0;
+            team.eggCount = numEggs;
+            res.render('team', team);
         }).catch((err) => {
             res.end('Error');
         });
     }else{
-        res.render('team', {csrf: req.csrfToken(), messages: req.flash('message')});
+        res.render('team', {
+            csrf: req.csrfToken(),
+            messages: req.flash('message')
+        });
     }
 });
 app.get('/team/:id', loggedIn, (req, res) => {
@@ -244,7 +261,7 @@ app.get('/team/:id', loggedIn, (req, res) => {
         Teams.findOne({_id: team_id}, '-teampassword'),
         Users.find({'team_id': ObjectID(team_id)}, '-password'),
         Submissions.find({'team_id': ObjectID(team_id), 'correct': true}, 'problem_id username user_id time')
-    ]).then(([team,users,subs]) => {
+    ]).then(([team,users,subs,eggs]) => {
         //Find out the problem names from the Problems collection
         Problems.find({'_id': {$in: subs.map((s) => {return ObjectID(s.problem_id);})}}, '_id name').then((problemNames) => {
             subs = subs.map((s) => {
@@ -255,7 +272,12 @@ app.get('/team/:id', loggedIn, (req, res) => {
                     user_id: s.user_id
                 };
             });
-            res.render('otherteam', {team: team, members: users, solves: subs, messages: req.flash('message')});
+            res.render('otherteam', {
+                team: team,
+                members: users,
+                solves: subs,
+                messages: req.flash('message')
+            });
         }).catch((err) => {
             res.end('Error');
         });
@@ -271,7 +293,7 @@ app.get('/problems', loggedIn, requireTeam, csrfProtection, requireCompetitionSt
     });
 });
 app.get('/scoreboard', requireCompetitionStarted, (req, res) => {
-    Teams.find({}, {sort: {score: -1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
+    Teams.find({"eligible": true}, {sort: {score: -1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
         res.render('scoreboard', {teams: JSON.stringify(docs), messages: req.flash('message'), scripts: ['/scripts/jquery.min.js','/scripts/teamlist.bundle.js']});
     }).catch((err) => {
         res.end("Error");
@@ -287,7 +309,7 @@ app.get('/logout', (req, res) => {
     req.logout();
     res.redirect('/');
 });
-app.get(`/${config.easterEggUrl}`, (req, res) => {
+app.get(`/${config.easterEggUrl}`, csrfProtection, (req, res) => {
     res.render("eastereggs", {csrf: req.csrfToken(), messages: req.flash('message')});
 });
 
@@ -333,11 +355,32 @@ app.post('/api/submit', csrfProtection, requireCompetitionActive, loggedIn, requ
         }
     });
 });
-app.pos('/api/eggs', (req, res) => {
-
+app.post('/api/eggs', csrfProtection, requireCompetitionActive, loggedIn, requireTeam, (req, res) => {
+    EasterEggSubmissions.findOne({team_id: req.user.team_id, egg: req.body.egg, correct: true}).then((doc) => {
+        if(doc){
+            req.flash('message', {"failure": "You already found this easter egg."});
+            res.redirect(`/${config.easterEggUrl}`);
+        }else{
+            EasterEggs.findOne({egg: req.body.egg}).then((doc) => {
+                let correct = false;
+                if(doc){
+                    req.flash('message', {"success": doc.msg});
+                    correct = true;
+                }else{
+                    req.flash('message', {"failure": "Invalid easter egg"});
+                }
+                EasterEggSubmissions.insert({
+                    egg: req.body.egg,
+                    team_id: req.user.team_id,
+                    correct: correct,
+                });
+                res.redirect(`/${config.easterEggUrl}`);
+            });
+        }
+    });
 });
 app.get('/api/teams', (req, res) => {
-    Teams.find({}, {sort: {score:-1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
+    Teams.find({"eligible": true}, {sort: {score:-1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
         res.setHeader('Content-Type', 'application/json');
         res.end(JSON.stringify({
             teams: docs
@@ -383,6 +426,7 @@ app.post('/api/jointeam', csrfProtection, loggedIn, (req, res) => {
                         teampassword: req.body.teampassword,
                         school: req.body.school,
                         numberOfMembers: 1,
+                        eligible: true,
                         score: 0
                     }
                     Teams.insert(newTeam, function(err, team){
