@@ -4,25 +4,23 @@ const fs = require('fs');
 const bodyParser = require('body-parser');
 const exphbs = require('express-handlebars');
 const session = require('express-session');
-const passport = require('passport');
-const LocalStrategy = require('passport-local').Strategy;
-const https = require('https');
-const http = require('http');
+// const https = require('https');
+// const http = require('http');
 const flash = require('express-flash');
 const MongoStore = require('connect-mongo')(session);
 const bcrypt = require('bcryptjs');
-const csurf = require('csurf');
 const morgan = require('morgan');
 const rfs = require('rotating-file-stream');
 const ObjectID = require('mongodb').ObjectID;
 const moment = require('moment');
 // const http2 = require('http2');
-// const spdy = require('spdy');
+const spdy = require('spdy');
 
-//Config file
-const config = require('../config.js');
-
-const csrfProtection = csurf();
+const common = require('./common.js');
+const config = common.config;
+const passport = common.passport;
+const middleware = common.middleware;
+const db = common.db;
 
 let app = express();
 
@@ -43,15 +41,6 @@ const accessLogStream = rfs('access.log', {
 // var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'});
 // setup the logger
 app.use(morgan('combined', {stream: accessLogStream}));
-
-//================DATABASE======================
-const db = require('monk')(config.dbLocation);
-const Users = db.get('users');
-const Teams = db.get('teams');
-const Problems = db.get('problems');
-const Submissions = db.get('submissions');
-const EasterEggs = db.get('eggs');
-const EasterEggSubmissions = db.get('eggsubmissions');
 
 //================EXPRESS======================
 app.use(bodyParser.urlencoded({extended: true}));
@@ -76,73 +65,7 @@ app.engine('.hbs', exphbs({
 }));
 app.set('view engine', '.hbs');
 app.set('views', path.resolve(__dirname, 'web', 'views'));
-//================PASSPORT=====================
-passport.use(new LocalStrategy({
-    passReqToCallback: true
-},function(req, username, password, done){
-    // return done(null, {id:'wowow',name:'Josh'});
-    Users.findOne({username: username}).then((doc) => {
-        if(doc == null){
-            req.flash('message', {"error": 'Login Failed'});
-            return done(null, false);
-            // return done(null, false, {message: {"error": 'Login Failed'}});
-        }
-        var hash = doc.password;
-        bcrypt.compare(password, hash).then((res) => {
-            if(res == false){
-                req.flash('message', {"error": 'Login Failed'});
-                return done(null, false);
-                // return done(null, false, {message: {"error": 'Login Failed'}});
-            }else{
-                delete doc.password; // might not be necessary
-                return done(null, doc);
-            }
-        }).catch((err) => {
-            return done(err);
-        });
-    }).catch((err) => {
-        return done(err);
-    });
-}));
 
-passport.use('local-signup', new LocalStrategy({
-    passReqToCallback: true
-},
-    function(req, username, password, done){
-        Users.findOne({username: username}).then((doc) => {
-            if(doc != null){
-                req.flash('message', {"error": 'User already exists'});
-                return done(null, false);
-                // return done(null, false, {message: {"error": 'User already exists'}});
-            }else{
-                bcrypt.hash(password, 8, function(err, hash){
-                    if(err) return done(err);
-                    Users.insert({
-                        username: username,
-                        password: hash,
-                        school: req.body.school,
-                        country: req.body.country
-                    }, function(err, user){
-                        return done(err, user);
-                    });
-                });
-            }
-        }).catch((err) => {
-            return done(err);
-    });
-}));
-
-passport.serializeUser(function(user, done) {
-    done(null, user._id);
-});
-
-passport.deserializeUser(function(id, done) {
-  Users.findOne({_id: id}, '-password', function(err, user){
-      done(err, user);
-  });
-});
-
-//================MIDDLEWARE======================
 //Passes the passport user object on to the res, allowing it to be rendered by handlebars
 app.use(function(req, res, next){
     res.locals.user = req.user;
@@ -151,69 +74,12 @@ app.use(function(req, res, next){
     }
     next();
 });
-//Middleware for checking if logged in
-function loggedIn(req, res, next) {
-    if(req.user){
-        next();
-    }else{
-        req.flash('message', {"error": 'Login Needed To Access That Resource'});
-        res.redirect('/login');
-    }
-}
-
-function requireTeam(req, res, next){
-    if(req.user && req.user.team_id){
-        next();
-    }else{
-        req.flash('message', {'error': "Team needed to Access that Resource"});
-        res.redirect('/team');
-    }
-}
-
-function requireAdmin(req, res, next){
-    if(req.user && config.adminAccountNames.indexOf(req.user.username) != -1){
-        next();
-    }else{
-        req.flash('message', {"error": 'Admin Needed To Access That Resource'});
-        res.redirect('back');
-    }
-}
-
-//Only activate route when the competition is in progress
-function requireCompetitionActive(req, res, next){
-    if(config.competitionStart == -1 || config.competitionEnd == -1){
-        next();
-    }else{
-        let d = Date.now();
-        if(d >= config.competitionStart && d <= config.competitionEnd){
-            next();
-        }else{
-            req.flash('message', {'error': 'Competition not in progress'});
-            res.redirect('back');
-        }
-    }
-}
-
-//Only activate route once the competition has started
-//This stays active even after the competition ends
-function requireCompetitionStarted(req, res, next){
-    if(config.competitionStart == -1){
-        next();
-    }else{
-        let d = Date.now();
-        if(d >= config.competitionStart){
-            next();
-        }else{
-            req.flash('message', {'error': "Competition hasn't started yet."});
-            res.redirect('back');
-        }
-    }
-}
 //================ROUTERS======================
-const adminRoutes = require('./routes/admin.js')(Problems, Teams);
+const adminRoutes = require('./routes/admin.js');
+const apiRoutes = require('./routes/api.js');
 // var errorPage = require('./routes/404.js');
-app.use('/admin', requireAdmin, csrfProtection, adminRoutes);
-
+app.use('/admin', middleware.requireAdmin, middleware.csrfProtection, adminRoutes);
+app.use('/api', middleware.csrfProtection, apiRoutes);
 //================ROUTES======================
 app.get('/', (req, res) => {
     res.render('index', {messages: req.flash('message')});
@@ -231,13 +97,13 @@ app.get('/learn', (req, res) => {
     res.render('learn', {messages: req.flash('message')});
 });
 app.get('/faq', (req, res) => {
-    res.render('faw', {messages: req.flash('message')});
+    res.render('faq', {messages: req.flash('message')});
 });
-app.get('/team', csrfProtection, loggedIn, (req, res) => {
+app.get('/team', middleware.csrfProtection, middleware.loggedIn, (req, res) => {
     if(req.user.team_id){
         Promise.all([
-            Teams.findOne({_id: req.user.team_id}, '-teampassword'),
-            EasterEggSubmissions.count({team_id: ObjectID(req.user.team_id), correct: true})
+            db.users.findOne({_id: req.user.team_id}, '-teampassword'),
+            db.eastereggsubmissions.count({team_id: ObjectID(req.user.team_id), correct: true})
         ]).then(([team, numEggs]) => {
             team.csrf = req.csrfToken();
             team.messages = req.flash('message');
@@ -254,16 +120,16 @@ app.get('/team', csrfProtection, loggedIn, (req, res) => {
         });
     }
 });
-app.get('/team/:id', loggedIn, (req, res) => {
+app.get('/team/:id', middleware.loggedIn, (req, res) => {
     let team_id = req.params.id;
     //Get data about the team from Teams, Users, and Submissions collecitons
     Promise.all([
-        Teams.findOne({_id: team_id}, '-teampassword'),
-        Users.find({'team_id': ObjectID(team_id)}, '-password'),
-        Submissions.find({'team_id': ObjectID(team_id), 'correct': true}, 'problem_id username user_id time')
+        db.users.findOne({_id: team_id}, '-teampassword'),
+        db.users.find({'team_id': ObjectID(team_id)}, '-password'),
+        db.submissions.find({'team_id': ObjectID(team_id), 'correct': true}, 'problem_id username user_id time')
     ]).then(([team,users,subs,eggs]) => {
         //Find out the problem names from the Problems collection
-        Problems.find({'_id': {$in: subs.map((s) => {return ObjectID(s.problem_id);})}}, '_id name').then((problemNames) => {
+        db.problems.find({'_id': {$in: subs.map((s) => {return ObjectID(s.problem_id);})}}, '_id name').then((problemNames) => {
             subs = subs.map((s) => {
                 return {
                     time: moment(s.time).format("MMMM Do YYYY, h:mm A"),
@@ -285,172 +151,41 @@ app.get('/team/:id', loggedIn, (req, res) => {
         res.end('Error');
     });
 });
-app.get('/problems', loggedIn, requireTeam, csrfProtection, requireCompetitionStarted, (req, res) => {
-    Problems.find({}, 'name score category description hint _id').then((docs) => {
+app.get('/problems', middleware.loggedIn, middleware.requireTeam, middleware.csrfProtection, middleware.requireCompetitionStarted, (req, res) => {
+    db.problems.find({}, 'name score category description hint _id').then((docs) => {
         res.render('problems', {problems: docs, csrf: req.csrfToken(), messages: req.flash('message')});
     }).catch((err) => {
         res.end("Error");
     });
 });
-app.get('/scoreboard', requireCompetitionStarted, (req, res) => {
-    Teams.find({"eligible": true}, {sort: {score: -1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
-        res.render('scoreboard', {teams: JSON.stringify(docs), messages: req.flash('message'), scripts: ['/scripts/jquery.min.js','/scripts/teamlist.bundle.js']});
+app.get('/scoreboard', middleware.requireCompetitionStarted, (req, res) => {
+    db.teams.find({"eligible": true}, {sort: {score: -1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
+        res.render('scoreboard', {
+            teams: JSON.stringify(docs),
+            messages: req.flash('message'),
+            scripts: [
+                '/scripts/jquery.min.js',
+                'https://www.gstatic.com/charts/loader.js',
+                '/scripts/graph.js',
+                '/scripts/teamlist.bundle.js'
+            ]
+        });
     }).catch((err) => {
         res.end("Error");
     });
 });
-app.get('/login', csrfProtection, (req, res) => {
+app.get('/login', middleware.csrfProtection, (req, res) => {
     res.render('login', {messages: req.flash('message'), csrf: req.csrfToken()});
 });
-app.get('/register', csrfProtection, (req, res) => {
+app.get('/register', middleware.csrfProtection, (req, res) => {
     res.render('register', {messages: req.flash('message'), csrf: req.csrfToken()});
 });
 app.get('/logout', (req, res) => {
     req.logout();
     res.redirect('/');
 });
-app.get(`/${config.easterEggUrl}`, csrfProtection, (req, res) => {
+app.get(`/${config.easterEggUrl}`, middleware.csrfProtection, (req, res) => {
     res.render("eastereggs", {csrf: req.csrfToken(), messages: req.flash('message')});
-});
-
-//Start of API
-app.post('/api/login', csrfProtection, passport.authenticate('local', {
-    failureRedirect: '/login',
-    successRedirect: '/team'
-}));
-app.post('/api/register', csrfProtection, passport.authenticate('local-signup', {
-    failureRedirect: '/register',
-    successRedirect: '/team'//,
-    //failureFlash: true
-}));
-app.post('/api/submit', csrfProtection, requireCompetitionActive, loggedIn, requireTeam, (req, res) => {
-    Submissions.findOne({team_id: req.user.team_id, problem_id: req.body.problemid, correct: true}).then((doc) => {
-        if(doc){
-            req.flash('message', {"failure": "You already solved this problem."});
-            res.redirect('/problems');
-        }else{
-            Problems.findOne({_id: req.body.problemid}).then((problem) => {
-                let grade = require(problem.grader);
-                let [correct, message] = grade(null, req.body.flag);
-                Submissions.insert({
-                    team_id: req.user.team_id,
-                    user_id: req.user._id,
-                    username: req.user.username,
-                    problem_id: req.body.problemid,
-                    correct: correct,
-                    attempt: req.body.flag,
-                    time: Date.now()
-                });
-                if(correct){
-                    req.flash('message', {'success' : message});
-                    Teams.update({_id: req.user.team_id}, {$inc: {score: problem.score}, $set: {submissionTime: Date.now()}});
-                }else{
-                    req.flash('message', {'failure' : message});
-                }
-                res.redirect('/problems');
-            }).catch((err) => {
-                req.flash('message', {"error": 'Error Submitting Problems'});
-                res.redirect('/problems');
-            });
-        }
-    });
-});
-app.post('/api/eggs', csrfProtection, requireCompetitionActive, loggedIn, requireTeam, (req, res) => {
-    EasterEggSubmissions.findOne({team_id: req.user.team_id, egg: req.body.egg, correct: true}).then((doc) => {
-        if(doc){
-            req.flash('message', {"failure": "You already found this easter egg."});
-            res.redirect(`/${config.easterEggUrl}`);
-        }else{
-            EasterEggs.findOne({egg: req.body.egg}).then((doc) => {
-                let correct = false;
-                if(doc){
-                    req.flash('message', {"success": doc.msg});
-                    correct = true;
-                }else{
-                    req.flash('message', {"failure": "Invalid easter egg"});
-                }
-                EasterEggSubmissions.insert({
-                    egg: req.body.egg,
-                    team_id: req.user.team_id,
-                    correct: correct,
-                });
-                res.redirect(`/${config.easterEggUrl}`);
-            });
-        }
-    });
-});
-app.get('/api/teams', (req, res) => {
-    Teams.find({"eligible": true}, {sort: {score:-1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({
-            teams: docs
-        }));
-    });
-});
-app.post('/api/jointeam', csrfProtection, loggedIn, (req, res) => {
-    if(!req.body.teamname || !req.body.teampassword){
-        req.flash('message', {"error": "Invalid teamname/password."});
-        res.redirect('/team');
-    }else{
-        if(req.body.joinTeam){
-            //Join existing team
-            Teams.findOne({teamname: req.body.teamname}).then((doc) => {
-                if(doc == null){
-                    req.flash('message', {"error": "Team doesn't exist."});
-                    res.redirect('/team');
-                }else{
-                    if(doc.numberOfMembers < config.maxTeamSize){
-                        if(doc.teampassword == req.body.teampassword){
-                            Users.findOneAndUpdate({_id: req.user._id}, {$set: {team_id: doc._id}});
-                            Teams.findOneAndUpdate({_id: doc._id}, {$set: {numberOfMembers: doc.numberOfMembers + 1}});
-                            res.redirect('/team');
-                        }else{
-                            req.flash('message', {"error": "Invalid team password."});
-                            res.redirect('/team');
-                        }
-                    }else{
-                        req.flash('message', {"error": "Team is full."});
-                        res.redirect('/team');
-                    }
-                }
-            });
-        }else{
-            //Create team
-            Teams.findOne({teamname: req.body.teamname}).then((doc) => {
-                if(doc != null){
-                    req.flash('message', {"error": "Team already exists."});
-                    res.redirect('/team');
-                }else{
-                    var newTeam = {
-                        teamname: req.body.teamname,
-                        teampassword: req.body.teampassword,
-                        school: req.body.school,
-                        numberOfMembers: 1,
-                        eligible: true,
-                        score: 0
-                    }
-                    Teams.insert(newTeam, function(err, team){
-                        Users.findOneAndUpdate({_id: req.user._id}, {$set: {team_id: team._id}});
-                        res.redirect('/team');
-                    });
-                }
-            });
-        }
-    }
-});
-app.post('/api/leaveteam', csrfProtection, loggedIn, (req, res) => {
-    if(req.user.team_id){
-        Teams.findOne({_id: req.user.team_id}).then((doc) => {
-            doc.numberOfMembers -= 1;
-            if(doc.numberOfMembers < 1){
-                Teams.remove({_id: req.user.team_id});
-            }else{
-                Teams.findOneAndUpdate({_id: req.user.team_id}, doc);
-            }
-        });
-        Users.findOneAndUpdate({_id: req.user._id}, {$unset: {team_id: 1}});
-    }
-    res.redirect('/team');
 });
 
 //Error page
@@ -483,5 +218,6 @@ if(config.useHTTPS){
         key: fs.readFileSync(config.httpsKeyFile),
         cert: fs.readFileSync(config.httpsCertFile)
     }
-    https.createServer(options,app).listen(config.webPortSecure);
+    // https.createServer(options,app).listen(config.webPortSecure);
+    spdy.createServer(options, app).listen(config.webPortSecure);
 }

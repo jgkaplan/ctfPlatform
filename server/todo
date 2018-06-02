@@ -25,8 +25,32 @@ errors
     - fix error on invalid /team/:id id
     - setup error logging
 
+Problems:
+    - locked requirements
+	- weightmap and number needed?
+    - reload page if new problems (rare so might not be necessary)
+    - bonus points
+
 content
     - fill in content on all pages (home, about, faq, chat, learn, news, etc.)
 
 style
     - style everything
+
+Scoreboard
+    - move all data processing to server side
+    - store parsed data, update if the database updates
+
+General
+    - add achievements
+        - display achievements on team page
+    - scoreboard graph
+    - password recovery
+	- ip, token, time limit
+    - scoreboard search / filter / limit (maybe)
+    - generate problems based on team id
+    - add stats
+
+(potential) bugs
+    - deal with async issues of sending the same flag in quick succession
+        (make sure both aren't inserted)
