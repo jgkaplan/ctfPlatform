@@ -2,6 +2,30 @@ google.charts.load('current', {packages: ['corechart', 'table']});
 
 google.charts.setOnLoadCallback(requestData);
 
+let graphOptions = {
+    // areaOpacity: 0.0, // maybe
+    legend: 'right',
+    title: 'Top Team Scores',
+    width: 500,
+    height: 300,
+    animation: {
+        startup: true,
+        duration: 1000,
+        easing: 'out'
+    },
+    pointSize: 3,
+    interpolateNulls: true, //maybe not. it is not rendering the first datapoint of team d.
+    vAxis: {
+        minValue: 0,
+        maxValue: 200,
+        title: 'Points'
+    },
+    hAxis: {
+        title: 'Time',
+        ticks: []
+    }
+}
+
 function requestData(){
     // drawChart(null);
     $.get('/api/graph').then((data) => {
@@ -17,6 +41,7 @@ function drawChart(d){
             row.c.unshift({v: new Date(date_string)});
             return row;
         });
+        console.log(stuff);
         return new google.visualization.DataTable(stuff);
     });
     let reduceCols = [];
@@ -28,24 +53,10 @@ function drawChart(d){
             return google.visualization.data.join(acc, el, 'full', [[0,0]], reduceCols, [1]);
         }catch(e){console.log(e)}
     });
-    var options = {
-        legend: 'right',
-        title: 'Top Team Scores',
-        width: 500,
-        height: 300,
-        animation: {
-            startup: true,
-            duration: 1000,
-            easing: 'out'
-        },
-        // pointSize: 5,
-        interpolateNulls: true, //maybe not. it is not rendering the first datapoint of team d.
-        vAxis: {minValue: 0, title: 'Points'},
-        hAxis: {title: 'Time'}
-    }
     //AreaChart
-    var chart = new google.visualization.SteppedAreaChart(document.getElementById('graph'));
-    chart.draw(data, options);
+    //SteppedAreaChart
+    var chart = new google.visualization.AreaChart(document.getElementById('graph'));
+    chart.draw(data, graphOptions);
     var table = new google.visualization.Table(document.getElementById('table'));
     table.draw(data,null);
 }

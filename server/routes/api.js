@@ -101,8 +101,9 @@ router.get('/graph', (req, res) => {
                 return db.submissions.find({"team_id": team._id, "correct": true}, {sort: {submissionTime: 1}, fields: ['time', 'points']})
             })
         ).then((submissions) => {
+            let t = Date.now();
             let data = docs.map((doc, i) => {
-                return {
+                let toReturn = {
                     cols: [
                         {label: 'Time', type: 'datetime'},
                         {label: doc.teamname, type: 'number'}
@@ -115,7 +116,11 @@ router.get('/graph', (req, res) => {
                         };
                     })
                         // {points:0,time:config.competitionStart}])
-                }
+                };
+                toReturn.rows.push({
+                    c: [{v: t}, {v: doc.score}]
+                });
+                return toReturn;
             });
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(data));

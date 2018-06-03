@@ -50,7 +50,11 @@ General
     - scoreboard search / filter / limit (maybe)
     - generate problems based on team id
     - add stats
+    - restrict usernames based on config
 
 (potential) bugs
     - deal with async issues of sending the same flag in quick succession
         (make sure both aren't inserted)
+
+(potential) improvements
+    - move rendering to client side so that server doesn't need to do as much work
