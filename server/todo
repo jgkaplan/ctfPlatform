@@ -58,3 +58,5 @@ General
 
 (potential) improvements
     - move rendering to client side so that server doesn't need to do as much work
+    - change chart animation to draw out stuff
+    - change chart time to steppedareachart (would need to fix interpolateNulls)

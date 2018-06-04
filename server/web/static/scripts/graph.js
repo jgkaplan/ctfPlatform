@@ -1,3 +1,4 @@
+/*
 google.charts.load('current', {packages: ['corechart', 'table']});
 
 google.charts.setOnLoadCallback(requestData);
@@ -60,3 +61,69 @@ function drawChart(d){
     var table = new google.visualization.Table(document.getElementById('table'));
     table.draw(data,null);
 }
+*/
+
+let graphOptions = {
+    spanGaps: true,
+    steppedLine: true,
+    bezierCurve: false,
+    elements: {
+            line: {
+                tension: 0, // disables bezier curves
+            }
+        },
+    scales: {
+            yAxes: [{
+                ticks: {
+                    beginAtZero: true,
+                    min: 0,
+                    suggestedMax: 200
+                },
+                scaleLabel: {
+                    display: true,
+                    label: "Score"
+                }
+            }],
+            xAxes: [{
+                type: 'time',
+                bounds: 'data'
+            }]
+        },
+    legend: {
+        position: 'right'
+    }
+}
+
+function requestData(){
+    $.get('/api/graph').then((data) => {
+        drawChart(data);
+    });
+}
+
+function drawChart(d){
+    var ctx = document.getElementById('graph').getContext('2d');
+    var graph = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'line',
+
+        // The data for our dataset
+        data: d,
+        // {
+        //     labels: ["January", "February", "March", "April", "May", "June", "July"],
+        //     datasets: [{
+        //         label: "My First dataset",
+        //         backgroundColor: 'rgb(255, 99, 132)',
+        //         borderColor: 'rgb(255, 99, 132)',
+        //         data: [0, 10, 5, 2, 20, 30, 45],
+        //     }]
+        // },
+
+        // Configuration options go here
+        options: graphOptions
+    });
+}
+
+$(document).ready(function(){
+    requestData();
+    // setInterval(requestData, 5000);
+})

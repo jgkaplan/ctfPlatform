@@ -162,13 +162,7 @@ app.get('/scoreboard', middleware.requireCompetitionStarted, (req, res) => {
     db.teams.find({"eligible": true}, {sort: {score: -1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
         res.render('scoreboard', {
             teams: JSON.stringify(docs),
-            messages: req.flash('message'),
-            scripts: [
-                '/scripts/jquery.min.js',
-                'https://www.gstatic.com/charts/loader.js',
-                '/scripts/graph.js',
-                '/scripts/teamlist.bundle.js'
-            ]
+            messages: req.flash('message')
         });
     }).catch((err) => {
         res.end("Error");

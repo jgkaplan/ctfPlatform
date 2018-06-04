@@ -8,7 +8,7 @@ module.exports = {
     "httpsCertFile": path.join(__dirname,"server","localhost-cert.pem"), /* path/to/cert/file */
     "dbLocation": "mongodb://localhost/ctfPlatform",
     "competitionStart": new Date(2018, 4, 29, 20, 0, 0).valueOf(), // use new Date(year, month (0 indexed), day, hour, minute, second) or -1
-    "competitionEnd": -1, // use new Date(year, month, day, hour, minute, second) or -1
+    "competitionEnd": new Date(2018, 4, 31, 20, 0, 0).valueOf(), // use new Date(year, month, day, hour, minute, second) or -1
     "maxTeamSize": 4,
     "numTeamsOnGraph": 5, //top [n] teams displayed on the scoreboard graph. -1 for all teams
     "problemDir": path.join(__dirname, 'problems'),

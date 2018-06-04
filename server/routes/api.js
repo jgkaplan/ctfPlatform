@@ -101,29 +101,42 @@ router.get('/graph', (req, res) => {
                 return db.submissions.find({"team_id": team._id, "correct": true}, {sort: {submissionTime: 1}, fields: ['time', 'points']})
             })
         ).then((submissions) => {
-            let t = Date.now();
+            let t = Math.min(config.competitionEnd, Date.now());
+            // let data = docs.map((doc, i) => {
+            //     let toReturn = {
+            //         cols: [
+            //             {label: 'Time', type: 'datetime'},
+            //             {label: doc.teamname, type: 'number'}
+            //         ],
+            //         rows: submissions[i].reduce(summer, [[config.competitionStart, 0]]).map((row) => {
+            //             return {
+            //                 c: row.map((cell) => {
+            //                     return {v: cell};
+            //                 })
+            //             };
+            //         })
+            //             // {points:0,time:config.competitionStart}])
+            //     };
+            //     toReturn.rows.push({
+            //         c: [{v: t}, {v: doc.score}]
+            //     });
+            //     return toReturn;
+            // });
+            let labels = []
             let data = docs.map((doc, i) => {
-                let toReturn = {
-                    cols: [
-                        {label: 'Time', type: 'datetime'},
-                        {label: doc.teamname, type: 'number'}
-                    ],
-                    rows: submissions[i].reduce(summer, [[config.competitionStart, 0]]).map((row) => {
-                        return {
-                            c: row.map((cell) => {
-                                return {v: cell};
-                            })
-                        };
+                let toReturn =  {
+                    label: doc.teamname,
+                    steppedLine: true,
+                    data: submissions[i].reduce(summer, [[config.competitionStart, 0]]).map((row) => {
+                        return {x: row[0], y: row[1]};
                     })
-                        // {points:0,time:config.competitionStart}])
                 };
-                toReturn.rows.push({
-                    c: [{v: t}, {v: doc.score}]
-                });
+                toReturn.data.push({x: t, y: doc.score});
                 return toReturn;
             });
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify(data));
+            // res.end(JSON.stringify(data));
+            res.end(JSON.stringify({datasets: data}));
         });
     });
 });
