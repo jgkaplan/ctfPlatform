@@ -11,7 +11,7 @@ teams
 }
 submissions
 {
-    problem_id, team_id, user_id, username, time, correct, attempt, id
+    problem_id, team_id, user_id, username, time, correct, attempt, id, points
 }
 problems
 {

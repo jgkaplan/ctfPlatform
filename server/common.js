@@ -55,6 +55,10 @@ passport.use('local-signup', new LocalStrategy({
     passReqToCallback: true
 },
     function(req, username, password, done){
+        if(config.restrictedNames.some((prefix) => {return username.toLowerCase().startsWith(prefix)})){
+            req.flash('message', {'error': 'Restricted username'});
+            return done(null, false);
+        }
         Users.findOne({username: username}).then((doc) => {
             if(doc != null){
                 req.flash('message', {"error": 'User already exists'});
@@ -112,7 +116,7 @@ module.exports.middleware.requireTeam = function(req, res, next){
 }
 
 module.exports.middleware.requireAdmin = function(req, res, next){
-    if(req.user && config.adminAccountNames.indexOf(req.user.username) != -1){
+    if(req.user && config.adminAccountNames.includes(req.user.username)){
         next();
     }else{
         req.flash('message', {"error": 'Admin Needed To Access That Resource'});

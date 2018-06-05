@@ -38,15 +38,18 @@ style
     - style everything
 
 Scoreboard
-    - move all data processing to server side
     - store parsed data, update if the database updates
+    - graph
+        - colors
+        - autoupdate
+        - title
+        - tooltips
 
 General
     - add achievements
         - display achievements on team page
-    - scoreboard graph
     - password recovery
-	- ip, token, time limit
+	   - ip, token, time limit
     - scoreboard search / filter / limit (maybe)
     - generate problems based on team id
     - add stats
