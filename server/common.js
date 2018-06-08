@@ -2,6 +2,8 @@
 const config = require('../config.js');
 module.exports.config = config;
 
+module.exports.ObjectID = require('mongodb').ObjectID;
+
 //================DATABASE======================
 const db = require('monk')(config.dbLocation);
 const Users = db.get('users');
@@ -23,6 +25,7 @@ module.exports.db = {
 //================PASSPORT=====================
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcryptjs');
 passport.use(new LocalStrategy({
     passReqToCallback: true
 },function(req, username, password, done){
@@ -103,6 +106,15 @@ module.exports.middleware.loggedIn = function(req, res, next) {
     }else{
         req.flash('message', {"error": 'Login Needed To Access That Resource'});
         res.redirect('/login');
+    }
+}
+
+module.exports.middleware.loggedOut = function(req, res, next) {
+    if(req.user){
+        req.flash('message', {"error": 'You must be logged out to access that resource.'});
+        res.redirect('/team');
+    }else{
+        next();
     }
 }
 

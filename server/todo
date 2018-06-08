@@ -26,8 +26,7 @@ errors
     - setup error logging
 
 Problems:
-    - locked requirements
-	- weightmap and number needed?
+    - show already solved problems differently
     - reload page if new problems (rare so might not be necessary)
     - bonus points
 
@@ -44,6 +43,7 @@ Scoreboard
         - autoupdate
         - title
         - tooltips
+    - allow for all or eligible
 
 General
     - add achievements
@@ -53,7 +53,8 @@ General
     - scoreboard search / filter / limit (maybe)
     - generate problems based on team id
     - add stats
-    - restrict usernames based on config
+    - restrict teamnames based on config
+    - add noscript / site requires javascript message
 
 (potential) bugs
     - deal with async issues of sending the same flag in quick succession

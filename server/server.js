@@ -8,10 +8,8 @@ const session = require('express-session');
 // const http = require('http');
 const flash = require('express-flash');
 const MongoStore = require('connect-mongo')(session);
-const bcrypt = require('bcryptjs');
 const morgan = require('morgan');
 const rfs = require('rotating-file-stream');
-const ObjectID = require('mongodb').ObjectID;
 const moment = require('moment');
 // const http2 = require('http2');
 const spdy = require('spdy');
@@ -21,6 +19,8 @@ const config = common.config;
 const passport = common.passport;
 const middleware = common.middleware;
 const db = common.db;
+const ObjectID = common.ObjectID;
+const utils = require('./utils.js');
 
 let app = express();
 
@@ -102,7 +102,7 @@ app.get('/faq', (req, res) => {
 app.get('/team', middleware.csrfProtection, middleware.loggedIn, (req, res) => {
     if(req.user.team_id){
         Promise.all([
-            db.users.findOne({_id: req.user.team_id}, '-teampassword'),
+            db.teams.findOne({_id: req.user.team_id}, '-teampassword'),
             db.eastereggsubmissions.count({team_id: ObjectID(req.user.team_id), correct: true})
         ]).then(([team, numEggs]) => {
             team.csrf = req.csrfToken();
@@ -111,7 +111,7 @@ app.get('/team', middleware.csrfProtection, middleware.loggedIn, (req, res) => {
             team.eggCount = numEggs;
             res.render('team', team);
         }).catch((err) => {
-            res.end('Error');
+            res.end('Error: ' + err);
         });
     }else{
         res.render('team', {
@@ -152,10 +152,20 @@ app.get('/team/:id', middleware.loggedIn, (req, res) => {
     });
 });
 app.get('/problems', middleware.loggedIn, middleware.requireTeam, middleware.csrfProtection, middleware.requireCompetitionStarted, (req, res) => {
-    db.problems.find({}, 'name score category description hint _id').then((docs) => {
-        res.render('problems', {problems: docs, csrf: req.csrfToken(), messages: req.flash('message')});
+    db.problems.find({}, '-grader').then((docs) => {
+        Promise.all(
+            docs.map((doc) => utils.problemUnlocked(doc, req.user.team_id))
+        ).then((includes) => {
+            let i = 0;
+            let filteredDocs = docs.filter((doc) => {
+                return includes[i++];
+            });
+            res.render('problems', {problems: filteredDocs, csrf: req.csrfToken(), messages: req.flash('message')});
+        }).catch((err) => {
+            res.end("Error: " + err);
+        });
     }).catch((err) => {
-        res.end("Error");
+        res.end("Error: " + err);
     });
 });
 app.get('/scoreboard', middleware.requireCompetitionStarted, (req, res) => {
@@ -168,17 +178,17 @@ app.get('/scoreboard', middleware.requireCompetitionStarted, (req, res) => {
         res.end("Error");
     });
 });
-app.get('/login', middleware.csrfProtection, (req, res) => {
+app.get('/login', middleware.loggedOut, middleware.csrfProtection, (req, res) => {
     res.render('login', {messages: req.flash('message'), csrf: req.csrfToken()});
 });
-app.get('/register', middleware.csrfProtection, (req, res) => {
+app.get('/register', middleware.loggedOut, middleware.csrfProtection, (req, res) => {
     res.render('register', {messages: req.flash('message'), csrf: req.csrfToken()});
 });
 app.get('/logout', (req, res) => {
     req.logout();
     res.redirect('/');
 });
-app.get(`/${config.easterEggUrl}`, middleware.csrfProtection, (req, res) => {
+app.get(`/${config.easterEggUrl}`, middleware.loggedIn, middleware.csrfProtection, (req, res) => {
     res.render("eastereggs", {csrf: req.csrfToken(), messages: req.flash('message')});
 });
 

@@ -5,12 +5,13 @@ const middleware = common.middleware;
 const config = common.config;
 const express = require('express');
 const router = express.Router();
+const utils = require('../utils.js');
 
-router.post('/login', middleware.csrfProtection, passport.authenticate('local', {
+router.post('/login', middleware.loggedOut, middleware.csrfProtection, passport.authenticate('local', {
     failureRedirect: '/login',
     successRedirect: '/team'
 }));
-router.post('/register', middleware.csrfProtection, passport.authenticate('local-signup', {
+router.post('/register', middleware.loggedOut, middleware.csrfProtection, passport.authenticate('local-signup', {
     failureRedirect: '/register',
     successRedirect: '/team'//,
     //failureFlash: true
@@ -22,30 +23,42 @@ router.post('/submit', middleware.csrfProtection, middleware.requireCompetitionA
             res.redirect('/problems');
         }else{
             db.problems.findOne({_id: req.body.problemid}).then((problem) => {
-                let grade = require(problem.grader);
-                let [correct, message] = grade(null, req.body.flag);
-                db.submissions.insert({
-                    team_id: req.user.team_id,
-                    user_id: req.user._id,
-                    username: req.user.username,
-                    problem_id: req.body.problemid,
-                    correct: correct,
-                    attempt: req.body.flag,
-                    points: problem.score,
-                    time: Date.now()
+                utils.problemUnlocked(problem, req.user.team_id).then((unlocked) => {
+                    if(!unlocked){
+                        req.flash('message', {"failure": "You have not unlocked this problem."});
+                        res.redirect('/problems');
+                    }
+                    let grade = require(problem.grader);
+                    let [correct, message] = grade(null, req.body.flag);
+                    db.submissions.insert({
+                        team_id: req.user.team_id,
+                        user_id: req.user._id,
+                        username: req.user.username,
+                        problem_id: req.body.problemid,
+                        correct: correct,
+                        attempt: req.body.flag,
+                        points: problem.score,
+                        time: Date.now()
+                    });
+                    if(correct){
+                        req.flash('message', {'success' : message});
+                        db.teams.update({_id: req.user.team_id}, {$inc: {score: problem.score}, $set: {submissionTime: Date.now()}});
+                    }else{
+                        req.flash('message', {'failure' : message});
+                    }
+                    res.redirect('/problems');
+                }).catch((err) => {
+                    req.flash('message', {"error": ''+err});
+                    res.redirect('/problems');
                 });
-                if(correct){
-                    req.flash('message', {'success' : message});
-                    db.teams.update({_id: req.user.team_id}, {$inc: {score: problem.score}, $set: {submissionTime: Date.now()}});
-                }else{
-                    req.flash('message', {'failure' : message});
-                }
-                res.redirect('/problems');
             }).catch((err) => {
                 req.flash('message', {"error": 'Error Submitting Problems'});
                 res.redirect('/problems');
             });
         }
+    }).catch((err) => {
+        req.flash('message', {"error": ''+err});
+        res.redirect('/problems');
     });
 });
 router.post('/eggs', middleware.csrfProtection, middleware.requireCompetitionActive, middleware.loggedIn, middleware.requireTeam, (req, res) => {
@@ -73,6 +86,7 @@ router.post('/eggs', middleware.csrfProtection, middleware.requireCompetitionAct
         }
     });
 });
+
 router.get('/teams', (req, res) => {
     db.teams.find({"eligible": true}, {sort: {score:-1, submissionTime: 1}, teampassword: 0, numberOfMembers: 0}).then((docs) => {
         res.setHeader('Content-Type', 'application/json');
