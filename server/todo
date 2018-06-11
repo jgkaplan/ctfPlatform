@@ -1,8 +1,4 @@
-Move Team signup to registration page, after the first page has been submitted.
-
 Add the other pages (news, teachers)
-
-make loadProblem script preserve problem id if the name is the same (allows for adding problems during competition)
 
 In grader files, pass in the key to the function
 
@@ -15,6 +11,11 @@ Admin page
     - mark team as ineligible
     - mark user as admin
     - create / modify problems
+        - specify grader
+            - case sensitive, case insensitive, ignore wrapper (chc{}), custom
+        - insert
+            - check if problem with same name already exists
+        - update
     - create / modify easter eggs
     - view full scoreboard (including ineligible teams)
     - call loadProblems, loadEasterEggs
@@ -37,7 +38,6 @@ style
     - style everything
 
 Scoreboard
-    - store parsed data, update if the database updates
     - graph
         - colors
         - autoupdate
@@ -55,12 +55,15 @@ General
     - add stats
     - restrict teamnames based on config
     - add noscript / site requires javascript message
+    - store data retrieved from database, update if necessary (if db updates)
+        - especially useful for scoreboard
+    - set content type of all JSON responses to json
+    - status codes for all responses
 
 (potential) bugs
     - deal with async issues of sending the same flag in quick succession
         (make sure both aren't inserted)
+    - strip usernames and teamnames (so they can't start with space)
 
 (potential) improvements
     - move rendering to client side so that server doesn't need to do as much work
-    - change chart animation to draw out stuff
-    - change chart time to steppedareachart (would need to fix interpolateNulls)

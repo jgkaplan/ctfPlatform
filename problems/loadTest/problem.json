@@ -1,0 +1,10 @@
+{
+    "name": "Load Test",
+    "category": "Tutorial",
+    "score": 10,
+    "description": "Test of loading problems.",
+    "hint": "The flag for this level is ctfPlatform{my_third_flag}",
+    "threshold": 0,
+    "weightmap": {},
+    "grader": "grader.js"
+}

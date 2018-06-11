@@ -16,5 +16,6 @@ module.exports = {
     "easterEggFile": path.join(__dirname, 'easterEggs.json'),
     "adminAccountNames": ["Admin", "admin"],
     "restrictedNames": ["admin","chc_"],
-    "easterEggUrl": "eastereggs"
+    "easterEggUrl": "eastereggs",
+    "favicon": path.join(__dirname, "server", "web", "favicon.ico")
 }

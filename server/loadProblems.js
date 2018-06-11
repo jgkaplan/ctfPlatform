@@ -4,7 +4,7 @@ var fs = require('fs');
 var path = require('path');
 
 var Problems = monk.get('problems');
-Problems.remove({});
+// Problems.remove({});
 fs.readdir(config.problemDir, function(err, files){
     if(err) throw err;
     files = files.filter(function(file){
@@ -19,9 +19,38 @@ fs.readdir(config.problemDir, function(err, files){
         problem.grader = path.join(fullpath, problem.grader);
         return problem;
     });
-    Problems.insert(files).then(function(){
-        monk.close();
-    });
+    Promise.all(
+        files.map((p) => {
+            return Problems.findOne({name: p.name}).then((prob) => {
+                if(prob){
+                    return Problems.update({name: prob.name}, p);
+                }else{
+                    return Problems.insert(p);
+                }
+            })
+        })
+    ).then((outers) => Promise.all(outers)).then(() => monk.close());
+    // Promise.all(
+    //     files.map((p) => Problems.findOne({name: p.name}))
+    // ).then((probs) => {
+    //     return Promise.all(
+    //         probs.map((prob, i) => {
+    //             if(prob){
+    //                 return Problems.update({name: prob.name}, files[i]);
+    //             }else{
+    //                 return Problems.insert(files[i]);
+    //             }
+    //         })
+    //     );
+    // }).then(() => monk.close());
+    // for (let p of files) {
+    //     Problems.find({name: p.name}).then((prob) => {
+    //
+    //     })
+    // } // close db. should use map and promise.alL?
+    // Problems.insert(files).then(function(){
+    //     monk.close();
+    // });
 });
 
 function mkdirUnlessExists(dir){
@@ -40,7 +69,9 @@ function copyDirRecursive(source, location){
             if(fs.lstatSync(newSource).isDirectory()){
                 copyDirRecursive(newSource, path.join(location, file));
             }else{
-                fs.writeFile(path.join(location, path.basename(newSource)), fs.readFileSync(newSource));
+                fs.writeFile(path.join(location, path.basename(newSource)), fs.readFileSync(newSource), (err) => {
+                  if (err) throw err;
+                });
             }
         }
     });

@@ -4,6 +4,7 @@ const fs = require('fs');
 const bodyParser = require('body-parser');
 const exphbs = require('express-handlebars');
 const session = require('express-session');
+const favicon = require('serve-favicon');
 // const https = require('https');
 // const http = require('http');
 const flash = require('express-flash');
@@ -13,6 +14,7 @@ const rfs = require('rotating-file-stream');
 const moment = require('moment');
 // const http2 = require('http2');
 const spdy = require('spdy');
+const compression = require('compression');
 
 const common = require('./common.js');
 const config = common.config;
@@ -24,7 +26,10 @@ const utils = require('./utils.js');
 
 let app = express();
 
+app.use(compression());
+
 //Setting up the static files
+app.use(favicon(config.favicon));
 app.use(express.static(path.resolve(__dirname, 'web', 'static')));
 app.use('/problem-static', express.static(path.resolve(__dirname, '..', 'problem-static')));
 // app.use(express.favicon(path.resolve(__dirname, '..', 'web', 'images', 'favicon.ico')));
@@ -121,12 +126,19 @@ app.get('/team', middleware.csrfProtection, middleware.loggedIn, (req, res) => {
     }
 });
 app.get('/team/:id', middleware.loggedIn, (req, res) => {
-    let team_id = req.params.id;
+    let team_id;
+    try{
+        team_id = ObjectID(req.params.id);
+    }catch(err){
+        req.flash('message', {"error": "Invalid team id."});
+        res.redirect('back');
+        return;
+    }
     //Get data about the team from Teams, Users, and Submissions collecitons
     Promise.all([
         db.users.findOne({_id: team_id}, '-teampassword'),
-        db.users.find({'team_id': ObjectID(team_id)}, '-password'),
-        db.submissions.find({'team_id': ObjectID(team_id), 'correct': true}, 'problem_id username user_id time')
+        db.users.find({'team_id': team_id}, '-password'),
+        db.submissions.find({'team_id': team_id, 'correct': true}, 'problem_id username user_id time')
     ]).then(([team,users,subs,eggs]) => {
         //Find out the problem names from the Problems collection
         db.problems.find({'_id': {$in: subs.map((s) => {return ObjectID(s.problem_id);})}}, '_id name').then((problemNames) => {
