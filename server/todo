@@ -23,7 +23,6 @@ Admin page
     - backup database
 
 errors
-    - fix error on invalid /team/:id id
     - setup error logging
 
 Problems:
